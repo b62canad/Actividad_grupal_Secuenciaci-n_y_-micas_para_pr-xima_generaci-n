@@ -72,8 +72,11 @@ txi = tximport(files, type = "salmon", tx2gene = tx2gene)
 # 2. Definir diseño experimental (Normopeso vs Obeso2)
 ############################################################
 
+# Simplificamos el nombre de la condicion Sobrepeso/Obeso2 a solamente Obeso2
+sample_info$Condition[sample_info$Condition == "Sobrepeso/Obeso2"] <- "Obeso2"
+
 # Filtrar las dos condiciones de interés
-sample_info_sub <- sample_info[sample_info$Condition %in% c("Sobrepeso/Obeso2", "Normopeso"), ]
+sample_info_sub <- sample_info[sample_info$Condition %in% c("Obeso2", "Normopeso"), ]
 
 rownames(sample_info_sub) <- sample_info_sub$Sample
 
@@ -97,7 +100,7 @@ dds <- DESeqDataSetFromMatrix(
 )
 
 # Factorizar la condición
-dds$Condition <- factor(dds$Condition, levels = c("Normopeso", "Sobrepeso/Obeso2"))
+dds$Condition <- factor(dds$Condition, levels = c("Normopeso", "Obeso2"))
 
 # Filtrar genes de baja expresión
 dds <- dds[rowSums(counts(dds)) > 10, ]
@@ -106,7 +109,7 @@ dds <- dds[rowSums(counts(dds)) > 10, ]
 dds <- DESeq(dds)
 
 # Resultados Obeso2 vs Normopeso
-res <- results(dds, contrast = c("Condition", "Sobrepeso/Obeso2", "Normopeso"))
+res <- results(dds, contrast = c("Condition", "Obeso2", "Normopeso"))
 
 
 # Resultados DESeq
@@ -131,7 +134,7 @@ res_df$gene <- rownames(res_df)
 # Clasificación de significancia
 res_df$signif <- ifelse(res_df$padj < 0.05, "Significativo", "No significativo")
 
-ggplot(res_df, aes(x = log10(baseMean + 1), y = log2FoldChange, color = signif)) +
+ggplot(res_df, aes(x = log2(baseMean), y = log2FoldChange, color = signif)) +
   geom_point(alpha = 0.5) +
   
   # Anotacion de los genes significativos
@@ -151,7 +154,7 @@ ggplot(res_df, aes(x = log10(baseMean + 1), y = log2FoldChange, color = signif))
   )) +
   geom_hline(yintercept = 0, linetype = "dashed") +
   labs(
-    x = "log10(baseMean + 1)",
+    x = "log2(baseMean)",
     y = "log2FoldChange",
     title = "MA plot: Obeso2 vs Normopeso",
     color = "Estado"
@@ -218,7 +221,7 @@ ggplot(pcaData, aes(x = PC1, y = PC2, color = Condition)) +
 # 7. Heatmap de los genes más variables
 ############################################################
 
-# Creamos un vector para las anotaciones
+# Creamos data frame para las anotaciones
 annota <- data.frame(row.names = sample_info_sub$Sample, Condition = factor(sample_info_sub$Condition))
 
 # Seleccionamos los 40 genes con mayor varianza
@@ -264,8 +267,8 @@ go_bp_sig <- go_bp[go_bp$Adjusted.P.value < 0.05, ]
 # Visualizamos las primeras filas
 head(go_bp_sig)
 
-# Se grafican los 15 primeros resultados
-top_terms <- go_bp_sig[1:15, ]
+# Se grafican los 5 primeros resultados
+top_terms <- go_bp_sig[1:5, ]
 ggplot(top_terms, aes(
   x = Combined.Score,
   y = reorder(Term, Combined.Score)
